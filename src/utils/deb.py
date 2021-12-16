@@ -2,6 +2,7 @@
 #
 #   DEB builder
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -20,6 +21,11 @@
 import os
 import platform
 import sys
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 
 def get_size(start_path='.'):
@@ -45,7 +51,7 @@ def info(msg, code=''):
         ret = msg
     else:
         ret = '%s: %s' % (code, msg)
-    print ret
+    print(ret)
 
 
 def _make_dir(path):
@@ -197,25 +203,24 @@ class DebBuilder:
 
         self.machine = platform.machine()
 
-        self.src = 'build/lib.linux-%s-%s' % (self.machine, self.py_version)
+        self.src = f'build/lib.linux-{self.machine}-{self.py_version}'
 
         if not self.dst:
-            path = '%s/usr/lib/python%s/dist-packages'
-            self.dst = path % (self.build_dir, self.py_version)
+            path = f'{self.build_dir}/usr/lib/python{self.py_version}/dist-packages'
+            self.dst = path
         else:
             self.dst = self.build_dir + self.dst
-        self.bin_dir = '%s/usr/bin' % self.build_dir
+        self.bin_dir = f'{self.build_dir}/usr/bin'
 
-        self.package_name = 'python-%s-%s_%s.deb' % (
-            self.name, self.version, self.arch)
+        self.package_name = 'python-{self.name}-{self.version}_{self.arch}.deb'
         self.build()
 
     def clear_build(self):
         if os.path.lexists(self.build_dir):
-            info('%s directory.' % self.build_dir, RM_CODE)
+            info(f'{self.build_dir} directory.', RM_CODE)
             if os.system('rm -rf ' + self.build_dir):
                 raise IOError(
-                    'Error while removing %s directory.' % self.build_dir)
+                    f'Error while removing {self.build_dir} directory.')
         if os.path.lexists('dist'):
             info('Cleaning dist/ directory.', RM_CODE)
             if os.system('rm -rf dist/*.deb'):
@@ -246,9 +251,9 @@ class DebBuilder:
                 name, val = item
                 if val:
                     if name:
-                        control.write('%s: %s\n' % (name, val))
+                        control.write(f'{name}: {val}\n')
                     else:
-                        control.write('%s\n' % val)
+                        control.write(f'{val}\n')
             control.close()
         except:
             raise IOError('Error while writing Debian control file.')
@@ -257,15 +262,15 @@ class DebBuilder:
         for item in os.listdir(self.src):
             path = os.path.join(self.src, item)
             if os.path.isdir(path):
-                info('%s -> %s' % (path, self.dst), CP_CODE)
-                if os.system('cp -R %s %s' % (path, self.dst)):
+                info(f'{path} -> {self.dst}', CP_CODE)
+                if os.system(f'cp -R {path} {self.dst}'):
                     raise IOError(
-                        'Error while copying %s -> %s' % (path, self.dst))
+                        f'Error while copying {path} -> {self.dst}')
             elif os.path.isfile(path):
-                info('%s -> %s' % (path, self.dst), CP_CODE)
-                if os.system('cp %s %s' % (path, self.dst)):
+                info(f'{path} -> {self.dst}', CP_CODE)
+                if os.system(f'cp {path} {self.dst}'):
                     raise IOError(
-                        'Error while copying %s -> %s' % (path, self.dst))
+                        f'Error while copying {path} -> {self.dst}')
 
     def copy_data_files(self):
         for item in self.data_files:

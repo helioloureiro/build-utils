@@ -2,6 +2,7 @@
 #
 #   Build utils
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -23,6 +24,11 @@ import shutil
 import sys
 
 from . import fsutils
+
+if sys.version_info.major < 3:
+    raise Exception("Unsupported Python version. Minimal requirement to use Python3.6.")
+if sys.version_info.minor < 6:
+    raise Exception("Unsupported Python version. Minimal requirement to use Python3.6.")
 
 
 def get_resources(pkg_path, path):
@@ -183,4 +189,4 @@ def copy_modules(modules, src_root='src'):
             if os.path.exists(dst2):
                 os.remove(dst2)
             shutil.copy(src, dst)
-        print '>>>Module %s has been copied to src/ directory' % path
+        print(f'>>>Module {path} has been copied to src/ directory')

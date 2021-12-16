@@ -2,6 +2,7 @@
 #
 #   pkgconfig utils
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -17,17 +18,39 @@
 # 	You should have received a copy of the GNU General Public License
 # 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import commands
 
+
+try:
+    import commands
+except ModuleNotFoundError:
+    import subprocess
+    class CommandInterface(object):
+        def __init__(self): None
+
+        def runShell(command):
+            response = subprocess.check_output(command.split())
+            return response
+        
+        def getoutput(command):
+            response =  self.runShell(command)
+            return response.encode('utf-8')
+
+    commands = CommandInterface()
+import sys
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 def get_pkg_version(pkg_name):
-    return commands.getoutput("pkg-config --modversion %s" % pkg_name).strip()
+    return commands.getoutput(f"pkg-config --modversion {pkg_name}").strip()
 
 
 def get_pkg_includes(pkg_names):
     includes = []
     for item in pkg_names:
-        output = commands.getoutput("pkg-config --cflags-only-I %s" % item)
+        output = commands.getoutput(f"pkg-config --cflags-only-I {item}")
         names = output.replace('-I', '').strip().split(' ')
         for name in names:
             if name not in includes:
@@ -38,7 +61,7 @@ def get_pkg_includes(pkg_names):
 def get_pkg_libs(pkg_names):
     libs = []
     for item in pkg_names:
-        output = commands.getoutput("pkg-config --libs-only-l %s" % item)
+        output = commands.getoutput("pkg-config --libs-only-l {item}")
         names = output.replace('-l', '').strip().split(' ')
         for name in names:
             if name not in libs:
@@ -49,7 +72,7 @@ def get_pkg_libs(pkg_names):
 def get_pkg_cflags(pkg_names):
     flags = []
     for item in pkg_names:
-        output = commands.getoutput("pkg-config --cflags-only-other %s" % item)
+        output = commands.getoutput("pkg-config --cflags-only-other {item}")
         names = output.strip().split(' ')
         for name in names:
             if name not in flags:

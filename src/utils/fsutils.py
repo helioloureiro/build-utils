@@ -2,6 +2,7 @@
 #
 #   Filesystem utils
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -18,6 +19,12 @@
 # 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+import sys
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 
 def get_filenames(path='.', ext='*'):

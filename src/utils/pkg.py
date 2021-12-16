@@ -2,6 +2,7 @@
 #
 #   macOS pkg build
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2019 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -26,11 +27,17 @@
 import os
 import shutil
 import sys
+import subprocess
 
 from . import fsutils
 from .bbox import echo_msg
 from .dmg import dmg_build
 from .xmlutils import XmlElement
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 # KW_SAMPLE = {
 #     'src_dir': '',  # path to distribution folder
@@ -82,6 +89,10 @@ CHECK_SCRIPT = """function install_check() {
 }
 """
 
+def shellRun(command):
+    response = subprocess.check_output(command.split())
+    return response.encode('utf-8')
+
 
 class PkgBuilder:
     def __init__(self, kwargs):
@@ -108,15 +119,15 @@ class PkgBuilder:
 
     def clear_build(self):
         if os.path.exists(self.build_dir):
-            os.system('rm -rf %s' % self.build_dir)
+            shellRun(f'rm -rf {self.build_dir}')
 
     def create_payload(self):
         echo_msg('Creating payload...  ', False)
         src = fsutils.normalize_path(self.kwargs['src_dir'])
         shutil.copytree(src, self.root_dir)
-        if os.system('( cd %s && find . | '
+        if shellRun(f'( cd {self.root_dir} && find . | '
                      'cpio -o --format odc --owner 0:80 | '
-                     'gzip -c ) > %s/Payload' % (self.root_dir, self.pkg_dir)):
+                    f'gzip -c ) > {self.pkg_dir}/Payload'):
             echo_msg('Error in payload')
             sys.exit(1)
         self.payload_sz = fsutils.getsize(self.root_dir, True)
@@ -133,8 +144,8 @@ class PkgBuilder:
             name = os.path.basename(scr)
             path = os.path.join(self.scripts_dir, name)
             shutil.copy(fsutils.normalize_path(scr), path)
-            os.system('chmod +x %s' % path)
-            scripts.add(XmlElement('preinstall', {'file': './%s' % name}))
+            shellRun(f'chmod +x {path}')
+            scripts.add(XmlElement('preinstall', {'file': f'./{name}'}))
 
         if 'postinstall' in self.kwargs:
             scripts = XmlElement('scripts') if not scripts else scripts
@@ -143,15 +154,15 @@ class PkgBuilder:
             name = os.path.basename(scr)
             path = os.path.join(self.scripts_dir, name)
             shutil.copy(fsutils.normalize_path(scr), path)
-            os.system('chmod +x %s' % path)
-            scripts.add(XmlElement('postinstall', {'file': './%s' % name}))
+            shellRun(f'chmod +x {path}')
+            scripts.add(XmlElement('postinstall', {'file': f'./{name}'}))
 
         if scripts:
-            os.system('( cd %s && find . | '
+            shellRun(f'( cd {self.scripts_dir} && find . | '
                       'cpio -o --format odc --owner 0:80 | gzip -c ) > '
-                      '%s/Scripts' % (self.scripts_dir, self.pkg_dir))
+                      f'{self.pkg_dir}/Scripts')
 
-        os.system('rm -rf %s' % self.scripts_dir)
+        shellRun(f'rm -rf {self.scripts_dir}')
         echo_msg('   OK')
         return scripts
 
@@ -173,7 +184,7 @@ class PkgBuilder:
         pkg_info.add(XmlElement('bundle-version'))
 
         pkg_info_file = os.path.join(self.pkg_dir, 'PackageInfo')
-        with open(pkg_info_file, 'wb') as fileptr:
+        with open(pkg_info_file, 'w') as fileptr:
             fileptr.write(
                 '<?xml version="1.0" encoding="utf-8" standalone="no"?>\n')
             pkg_info.write_xml(fileptr)
@@ -181,8 +192,8 @@ class PkgBuilder:
 
     def create_bom(self):
         echo_msg('Creating Bom...', False)
-        os.system('mkbom -u 0 -g 80 %s %s/Bom' % (self.root_dir, self.pkg_dir))
-        os.system('rm -rf %s' % self.root_dir)
+        shellRun(f'mkbom -u 0 -g 80 {self.root_dir} {self.pkg_dir}/Bom')
+        shellRun(f'rm -rf {self.root_dir}')
         echo_msg('   OK')
 
     def add_rescource(self, tag_name):
@@ -241,7 +252,7 @@ class PkgBuilder:
         }, content='#base.pkg'))
 
         distr_file = os.path.join(self.flat_dir, 'Distribution')
-        with open(distr_file, 'wb') as fileptr:
+        with open(distr_file, 'w') as fileptr:
             fileptr.write(
                 '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n')
             distr.write_xml(fileptr)
@@ -249,8 +260,8 @@ class PkgBuilder:
 
     def make_pkg(self):
         echo_msg('Creating package...', False)
-        os.system('( cd %s && xar --compression none '
-                  '-cf "../%s" * )' % (self.flat_dir, self.kwargs['pkg_name']))
+        shellRun(f'( cd {self.flat_dir} && xar --compression none '
+                  f'-cf "../{self.kwargs['pkg_name']}" * )' ))
         echo_msg('   OK')
 
     def make_dmg(self):

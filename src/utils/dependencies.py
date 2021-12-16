@@ -2,6 +2,7 @@
 #
 #   Setup dependencies module
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2016-2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -20,11 +21,18 @@
 import os
 import shutil
 import sys
+import distro
 
-from dist import *
+from .dist import *
 
-DEB_GENERIC = 'liblcms2-2 (>=2.0), python (>=2.7), python (<<3.0), '
-DEB_GENERIC += 'python-cairo, '
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
+
+
+DEB_GENERIC = 'liblcms2-2 (>=2.0), python (>=3.6)'
+DEB_GENERIC += 'python3-cairo, '
 
 UC2_DEB_DEPENDENCIES = {
     UBUNTU14: DEB_GENERIC + 'libmagickwand5, python-pil, python-cairo, python-reportlab',
@@ -32,10 +40,11 @@ UC2_DEB_DEPENDENCIES = {
     UBUNTU16: DEB_GENERIC + 'libmagickwand-6.q16-2, python-pil, python-cairo, python-reportlab',
     UBUNTU17: DEB_GENERIC + 'libmagickwand-6.q16-3, python-pil, python-cairo, python-reportlab',
     UBUNTU18: DEB_GENERIC + 'libmagickwand-6.q16-3, python-pil, python-cairo, python-reportlab'
-        if platform.dist()[1] != '18.10' else
+        if distro.version() != '18.10' else
         DEB_GENERIC + 'libmagickwand-6.q16-6, python-pil, python-cairo, python-reportlab',
     UBUNTU19: DEB_GENERIC + 'libmagickwand-6.q16-6, python-pil, python-cairo, python-reportlab',
     UBUNTU20: DEB_GENERIC + 'libmagickwand-6.q16-6, python-pil, python-cairo',
+    UBUNTU21: DEB_GENERIC + 'libmagickwand-6.q16-6, python3-pil, python3-cairo, python3-reportlab',
 
     MINT17: DEB_GENERIC + 'libmagickwand5, python-pil, python-cairo, python-reportlab',
     MINT18: DEB_GENERIC + 'libmagickwand-6.q16-2, python-pil, python-cairo, python-reportlab',
@@ -46,6 +55,7 @@ UC2_DEB_DEPENDENCIES = {
     DEBIAN8: DEB_GENERIC + 'libmagickwand-6.q16-2, python-pil, python-cairo, python-reportlab',
     DEBIAN9: DEB_GENERIC + 'libmagickwand-6.q16-3, python-pil, python-cairo, python-reportlab',
     DEBIAN10: DEB_GENERIC + 'libmagickwand-6.q16-6, python-pil, python-cairo, python-reportlab',
+    DEBIAN11: DEB_GENERIC + 'libmagickwand-6.q16-6, python3-pil, python3-cairo, python3-reportlab',
 }
 
 SK1_DEB_DEPENDENCIES = {
@@ -56,6 +66,7 @@ SK1_DEB_DEPENDENCIES = {
     UBUNTU18: 'python-wxgtk3.0, python-cups',
     UBUNTU19: 'python-wxgtk3.0, python-cups',
     UBUNTU20: 'python-wxgtk3.0, libcups2',
+    UBUNTU21: 'python3-wxgtk4.0, libcups2',
 
     MINT17: 'python-wxgtk2.8, python-cups',
     MINT18: 'python-wxgtk3.0, python-cups',
@@ -66,6 +77,7 @@ SK1_DEB_DEPENDENCIES = {
     DEBIAN8: 'python-wxgtk3.0, python-cups',
     DEBIAN9: 'python-wxgtk3.0, python-cups',
     DEBIAN10: 'python-wxgtk3.0, python-cups',
+    DEBIAN11: 'python3-wxgtk4.0, python-cups',
 }
 
 UC2_RPM_DEPENDENCIES = {
@@ -158,7 +170,7 @@ def get_sk1_rpm_depend():
     if SYSFACTS.sid in SK1_RPM_DEPENDENCIES:
         sk1_dep = SK1_RPM_DEPENDENCIES[SYSFACTS.sid]
     if uc2_dep and sk1_dep:
-        sk1_dep = '%s %s' % (uc2_dep, sk1_dep)
+        sk1_dep = f'{uc2_dep} {sk1_dep}'
     elif uc2_dep:
         sk1_dep = uc2_dep
     return sk1_dep
@@ -169,11 +181,11 @@ def install_pip_deps(deps):
         os.system('mv setup.cfg setup.cfg_')
     py_version = '.'.join(sys.version.split()[0].split('.')[:2])
     machine = platform.machine()
-    target = './build/lib.linux-%s-%s' % (machine, py_version)
+    target = f'./build/lib.linux-{machine}-{py_version}'
     for item in deps:
-        pkg = './utils/packages/%s' % item
-        if os.system('pip2 install --target %s %s' % (target, pkg)):
-            raise Exception('Error installing %s' % item)
+        pkg = f'./utils/packages/{item}'
+        if os.system(f'pip3 install --target {target} {pkg}'):
+            raise Exception(f'Error installing {item}')
     artifacts = [item for item in os.listdir(target) if item.endswith('-info')]
     artifacts += ['PIL']
     for item in artifacts:

@@ -2,6 +2,7 @@
 #
 #   OS dist staff
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -18,6 +19,13 @@
 # 	along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import platform
+import distro
+import sys
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 WINDOWS = 'Windows'
 LINUX = 'Linux'
@@ -39,12 +47,14 @@ UBUNTU17 = 'Ubuntu 17'
 UBUNTU18 = 'Ubuntu 18'
 UBUNTU19 = 'Ubuntu 19'
 UBUNTU20 = 'Ubuntu 20'
+UBUNTU21 = 'Ubuntu 21'
 
 DEBIAN = 'debian'
 DEBIAN7 = 'debian 7'
 DEBIAN8 = 'debian 8'
 DEBIAN9 = 'debian 9'
 DEBIAN10 = 'debian 10'
+DEBIAN11 = 'debian 11'
 
 FEDORA = 'fedora'
 FEDORA21 = 'fedora 21'
@@ -84,7 +94,8 @@ MARKERS = {
 
 class SystemFacts(object):
     def __init__(self):
-        self.family, self.version = platform.dist()[:2]
+        self.family = distro.id()
+        self.version = distro.version()
 
         # Workaround for Leap 15.0
         if not self.family and not self.version:
@@ -92,9 +103,10 @@ class SystemFacts(object):
 
         # Workaround for Suse 42.x
         if self.family == OPENSUSE and self.version.startswith('42'):
-            self.sid = '%s %s' % (self.family, self.version)
+            self.sid = f'{self.family} {self.version}'
         else:
-            self.sid = '%s %s' % (self.family, self.version.split('.')[0])
+            majorVersion = self.version.split('.')[0]
+            self.sid = f'{self.family} {majorVersion}'
 
         self.arch = platform.architecture()[0]
         self.is_64bit = self.arch == '64bit'
