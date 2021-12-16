@@ -194,7 +194,7 @@ class DebBuilder:
         if dst:
             self.dst = dst
 
-        self.package = 'python-%s' % self.name
+        self.package = f'python3-{self.name}'
         self.py_version = '.'.join(sys.version.split()[0].split('.')[:2])
 
         if not self.arch:
@@ -212,7 +212,7 @@ class DebBuilder:
             self.dst = self.build_dir + self.dst
         self.bin_dir = f'{self.build_dir}/usr/bin'
 
-        self.package_name = 'python-{self.name}-{self.version}_{self.arch}.deb'
+        self.package_name = f'python3-{self.name}-{self.version}_{self.arch}.deb'
         self.build()
 
     def clear_build(self):

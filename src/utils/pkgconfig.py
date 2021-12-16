@@ -27,13 +27,26 @@ except ModuleNotFoundError:
     class CommandInterface(object):
         def __init__(self): None
 
-        def runShell(command):
-            response = subprocess.check_output(command.split())
+        def runShell(self, command):
+            # this just go avoid unfriendly subprocess errors
+            def exception_handler(type, value, traceback):
+                if type == subprocess.CalledProcessError:
+                    return
+                else:
+                    print("ERROR:", value)
+
+            # this just go avoid unfriendly subprocess errors
+            sys.excepthook = exception_handler
+
+            try:
+                response = subprocess.check_output(command.split())
+            except subprocess.CalledProcessError:
+                raise Exception("The following command failed:", command)
             return response
         
-        def getoutput(command):
+        def getoutput(self, command):
             response =  self.runShell(command)
-            return response.encode('utf-8')
+            return response.decode('utf-8')
 
     commands = CommandInterface()
 import sys
@@ -61,7 +74,7 @@ def get_pkg_includes(pkg_names):
 def get_pkg_libs(pkg_names):
     libs = []
     for item in pkg_names:
-        output = commands.getoutput("pkg-config --libs-only-l {item}")
+        output = commands.getoutput(f"pkg-config --libs-only-l {item}")
         names = output.replace('-l', '').strip().split(' ')
         for name in names:
             if name not in libs:
@@ -72,7 +85,7 @@ def get_pkg_libs(pkg_names):
 def get_pkg_cflags(pkg_names):
     flags = []
     for item in pkg_names:
-        output = commands.getoutput("pkg-config --cflags-only-other {item}")
+        output = commands.getoutput(f"pkg-config --cflags-only-other {item}")
         names = output.strip().split(' ')
         for name in names:
             if name not in flags:

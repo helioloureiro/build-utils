@@ -2,6 +2,7 @@
 #
 #   Native modules build
 #
+# 	Copyleft  (L) 2021 by Helio Loureiro
 # 	Copyright (C) 2015-2018 by Ihor E. Novikov
 #
 # 	This program is free software: you can redistribute it and/or modify
@@ -19,11 +20,17 @@
 
 import os
 import platform
+import sys
 
 from . import build
 from . import pkgconfig
 
 from distutils.core import Extension
+
+version = int(sys.version_info.major)
+version += int(sys.version_info.minor) / 10.
+if version < 3.6:
+    raise Exception("Unsupported Python version.  Please use 3.6 or higher.")
 
 
 def make_modules(src_path, include_path, lib_path=None):
@@ -47,8 +54,8 @@ def make_modules(src_path, include_path, lib_path=None):
         include_dirs = pkgconfig.get_pkg_includes(['pycairo', 'cairo'])
         cairo_libs = pkgconfig.get_pkg_libs(['pycairo', 'cairo'])
     elif os.name == 'posix':
-        include_dirs = pkgconfig.get_pkg_includes(['pycairo', ])
-        cairo_libs = pkgconfig.get_pkg_libs(['pycairo', ])
+        include_dirs = pkgconfig.get_pkg_includes(['py3cairo', ])
+        cairo_libs = pkgconfig.get_pkg_libs(['py3cairo', ])
 
     cairo_module = Extension(
         'uc2.libcairo._libcairo',
@@ -101,7 +108,7 @@ def make_modules(src_path, include_path, lib_path=None):
         pango_libs = pkgconfig.get_pkg_libs(['pangocairo', 'pango', 'pycairo',
                                              'cairo'])
     elif os.name == 'posix':
-        include_dirs = pkgconfig.get_pkg_includes(['pangocairo', 'pycairo'])
+        include_dirs = pkgconfig.get_pkg_includes(['pangocairo', 'py3cairo'])
         pango_libs = pkgconfig.get_pkg_libs(['pangocairo', ])
 
     pango_module = Extension(
